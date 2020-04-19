@@ -1,0 +1,122 @@
+[gd_scene load_steps=3 format=2]
+
+[sub_resource type="GDScript" id=1]
+script/source = "extends Node
+
+
+var score = 0
+
+var radius = 60
+var time = 2.0
+
+var circle_scene = preload(\"res://Circle.tscn\")
+var circle_explode_scene = preload(\"res://CircleExplodes.tscn\")
+
+onready var play_area = get_node(\"PlayArea\")
+onready var label_score = $MarginContainer/HBoxContainer/LabelScore
+
+
+func _on_Timer_timeout():
+	var circle:Node2D = circle_scene.instance()
+	play_area.add_child(circle)
+	circle.radius = radius
+	circle.start(time)
+	circle.position = Vector2(randi()%1024,randi()%600)
+	circle.connect(\"clicked\",self,\"circle_clicked\")
+	circle.connect(\"missed\",self,\"circle_missed\")
+
+func set_score(s):
+	score = s
+	label_score.text = str(s)
+
+func circle_clicked(_the_circle):
+	set_score(score+10)
+	var ce = circle_explode_scene.instance()
+	play_area.add_child(ce)
+	ce.global_position = _the_circle.global_position
+	ce.emitting = true
+	radius = radius - 2
+	if radius < 4:
+		radius = 60
+		time = time - 0.2
+	if time < 0.2:
+		time = 0.2
+		radius = 4
+
+func circle_missed(_the_circle):
+	set_score(score-15)
+	radius = radius + 2
+	if radius>60:
+		radius = 60
+"
+
+[sub_resource type="Animation" id=2]
+resource_name = "DisturbPlayer"
+length = 2.0
+loop = true
+tracks/0/type = "value"
+tracks/0/path = NodePath("PlayArea:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 1, 2 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ 0.0, 10.0, 0.0 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("PlayArea:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 1, 2 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Vector2( 0, 0 ), Vector2( 10, 5 ), Vector2( 0, 0 ) ]
+}
+
+[node name="Main" type="Node"]
+script = SubResource( 1 )
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchor_right = 1.0
+custom_constants/margin_right = 10
+custom_constants/margin_top = 10
+custom_constants/margin_left = 10
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+margin_left = 10.0
+margin_top = 10.0
+margin_right = 1014.0
+margin_bottom = 24.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer"]
+margin_right = 45.0
+margin_bottom = 14.0
+text = "SCORE:"
+
+[node name="LabelScore" type="Label" parent="MarginContainer/HBoxContainer"]
+margin_left = 49.0
+margin_right = 57.0
+margin_bottom = 14.0
+text = "0"
+
+[node name="Timer" type="Timer" parent="."]
+autostart = true
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+autoplay = "DisturbPlayer"
+anims/DisturbPlayer = SubResource( 2 )
+
+[node name="PlayArea" type="Node2D" parent="."]
+[connection signal="timeout" from="Timer" to="." method="_on_Timer_timeout"]

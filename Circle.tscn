@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=2]
+
+[sub_resource type="GDScript" id=1]
+script/source = "extends Area2D
+
+signal clicked(me)
+signal missed(me)
+
+onready var tween = $Tween
+
+var radius = 60 setget set_radius
+
+var color = Color.red
+
+func _ready():
+	color = [Color.red,Color.blue,Color.violet,Color.yellow][randi()%4]
+	update()
+
+func set_radius(v):
+	radius = v
+	update()
+
+func start(t):
+	tween.interpolate_property(self,\"modulate\",Color.white,Color.transparent,t)
+	tween.start()
+	yield(tween,\"tween_all_completed\")
+	if !is_queued_for_deletion():
+		emit_signal(\"missed\",self)
+		queue_free()
+
+func _draw():
+	draw_circle(Vector2(0,0),radius,color)
+
+func _on_Circle_input_event(viewport, event, shape_idx):
+	if event is InputEventMouseButton and event.pressed and event.button_index==BUTTON_LEFT:
+		if global_position.distance_squared_to(event.global_position) <= radius*radius:
+			emit_signal(\"clicked\",self)
+			queue_free()
+"
+
+[sub_resource type="CircleShape2D" id=2]
+radius = 60.0
+
+[node name="Circle" type="Area2D"]
+script = SubResource( 1 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource( 2 )
+
+[node name="Tween" type="Tween" parent="."]
+[connection signal="input_event" from="." to="." method="_on_Circle_input_event"]
